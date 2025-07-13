@@ -69,11 +69,11 @@ export default async function RootLayout({ children }) {
       </Head>
       <body>
         <Layout
-          banner={banner}
+          // banner={banner}
           navbar={navbar}
           pageMap={await getPageMap()}
           docsRepositoryBase="https://github.com/shuding/nextra/tree/main/docs"
-          footer={footer}
+          // footer={footer}
           // ... Your additional layout options
         >
           {children}
