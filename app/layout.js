@@ -41,7 +41,7 @@ export const metadata = {
   description: "Chris buczek blog about web development and programming. ",
 };
 
-const banner = <Banner storageKey="some-key">Nextra 4.0 is released 🎉</Banner>;
+// const banner = <Banner storageKey="some-key">Nextra 4.0 is released 🎉</Banner>;
 const navbar = (
   <Navbar
     logo={<b>Chris Buczek Blog</b>}
@@ -50,7 +50,7 @@ const navbar = (
     <a href="https://www.chrisbuczek.com/">Portfolio</a>
   </Navbar>
 );
-const footer = <Footer>MIT {new Date().getFullYear()} © Nextra.</Footer>;
+// const footer = <Footer>MIT {new Date().getFullYear()} © Nextra.</Footer>;
 
 export default async function RootLayout({ children }) {
   return (
