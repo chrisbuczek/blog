@@ -3,6 +3,7 @@ import { Banner, Head } from "nextra/components";
 import { getPageMap } from "nextra/page-map";
 import { Link } from "next/link";
 import "nextra-theme-docs/style.css";
+import Image from "next/image";
 
 export const metadata = {
   // Define your metadata here
@@ -13,12 +14,17 @@ export const metadata = {
 
 const navbar = (
   <Navbar
-    logo={<b>Chris Buczek Blog</b>}
-    logoLink={"https://blog.chrisbuczek.com"}
-    align="left"
-    projectIcon={<div>My Portfolio</div>}
-    projectLink="https://www.chrisbuczek.com"
-  ></Navbar>
+    logo={
+      <div>
+        <b>Chris Buczek Blog</b>
+      </div>
+    }
+    logoLink={"/"}
+  >
+    <a href="https://www.chrisbuczek.com">Portfolio</a>
+    <a href="https://github.com/chrisbuczek">Github</a>
+    <a href="https://www.linkedin.com/in/krzysztof-buczek/">Linked In</a>
+  </Navbar>
 );
 
 export default async function RootLayout({ children }) {
