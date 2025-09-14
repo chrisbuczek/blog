@@ -1,8 +1,12 @@
-# 1. How JWT Works
+# How JWT Works
 
-How Json Web Token Works using Node.js and jsonwebtoken npm library.
+Short explanation of how Json Web Token works using Node.js and jsonwebtoken library.
 
-```js filename="tokenGenerate.ts" {3} copy
+## The Basics
+
+## Generating the token
+
+```js filename="tokenGenerate.ts" copy
 import jwt from "jsonwebtoken";
 
 const generateToken = (id: string) => {
@@ -11,3 +15,5 @@ const generateToken = (id: string) => {
 
 export default generateToken;
 ```
+
+## Middleware auth (protect)
