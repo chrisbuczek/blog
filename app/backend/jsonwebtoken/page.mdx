@@ -13,18 +13,50 @@ JWT's purpose is to securely transmit information between parties as json object
 Each part is encoded in Base64 and separated by a period. Header contains algorythm used for token sign encryption (ex. "alg": "HS256") and token type (ex. "typ": "JWT").
 Payload is where we store our claims. Most often it contains user name, user email or id, user roles, token expiration. Payload can be encrypted, but
 most implementations only use signed, not encrypted tokens. This means that the data in the payload can be read by a 3rd party if intercepted. **Sensitive information
-should never travel in a JWT payload.**
+should never travel in a JWT payload** (unless it's encrypted). Signature
 
-## Generating the token
+## Generating/signing the token
+
+There are two ways of signing a token: with a symetric key or with an asymetric key.
 
 ```js filename="tokenGenerate.ts" copy
 import jwt from "jsonwebtoken";
 
 const generateToken = (id: string) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET_KEY as string, { expiresIn: "30d" });
+  if (!process.env.JWT_SECRET_KEY) {
+    throw new Error("JWT_SECRET_KEY environment variable is required");
+  }
+
+  return jwt.sign({ id }, process.env.JWT_SECRET_KEY as string, { expiresIn: "1h" });
 };
 
 export default generateToken;
+```
+
+## Sending the token to the client
+
+Before sending the token to the client we have to authenticate him first. Usually we use '/login' route for that.
+After ensuring that the provided email and password by the client match stored data in the database, we generate and send him a valid token.
+In the code example we only put user id in the payload. We could also put name, email and roles inside the token payload.
+
+```js filename="routes/User.ts" {11} copy
+router.post("/login", validate(loginSchema), async (req, res) => {
+
+  const { email, password } = req.body;
+  const foundUser = await User.findOne({ email });
+
+  if (foundUser && (await foundUser.matchPassword(password))) {
+    res.json({
+      name: foundUser.name,
+      email: foundUser.email,
+      roles: foundUser.roles,
+      token: generateToken(foundUser._id as string),
+    });
+  } else {
+    res.status(401);
+    throw new Error("Invalid Email or Password");
+  }
+});
 ```
 
 ## Authorization middleware
@@ -84,28 +116,6 @@ const auth = async (req: AuthRequest, res: Response, next: NextFunction) => {
 };
 
 export default auth;
-```
-
-## Sending the token to the client
-
-```js filename="routes/User.ts" {11} copy
-router.post("/login", async (req, res) => {
-
-  const { email, password } = req.body;
-  const foundUser = await User.findOne({ email });
-
-  if (foundUser && (await foundUser.matchPassword(password))) {
-    res.json({
-      name: foundUser.name,
-      email: foundUser.email,
-      roles: foundUser.roles,
-      token: generateToken(foundUser._id as string),
-    });
-  } else {
-    res.status(401);
-    throw new Error("Invalid Email or Password");
-  }
-});
 ```
 
 ## Saving the token in the client
