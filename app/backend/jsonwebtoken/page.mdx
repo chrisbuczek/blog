@@ -1,8 +1,19 @@
 # How JWT Works
 
-Short explanation of how Json Web Token works using Node.js and jsonwebtoken library.
+Short explanation of how Json Web Token works using Node.js with jsonwebtoken library and React.js.
 
 ## The Basics
+
+JWT's purpose is to securely transmit information between parties as json objects. JWT's are structed from three parts:
+
+1. Header
+2. Payload
+3. Signature
+
+Each part is encoded in Base64 and separated by a period. Header contains algorythm used for token sign encryption (ex. "alg": "HS256") and token type (ex. "typ": "JWT").
+Payload is where we store our claims. Most often it contains user name, user email or id, user roles, token expiration. Payload can be encrypted, but
+most implementations only use signed, not encrypted tokens. This means that the data in the payload can be read by a 3rd party if intercepted. **Sensitive information
+should never travel in a JWT payload.**
 
 ## Generating the token
 
