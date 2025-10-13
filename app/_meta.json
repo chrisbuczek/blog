@@ -1,6 +1,23 @@
 {
   "index": "Introduction",
-  "frontend": "Frontend development topics",
-  "backend": "Backend development topics",
-  "projects": "My hobby projects I make in my free time."
+  "projects": {
+    "title": "My hobby projects I make in my free time.",
+    "type": "folder",
+    "collapsed": true
+  },
+  "frontend": {
+    "title": "Frontend development topics",
+    "type": "folder",
+    "collapsed": true
+  },
+  "backend": {
+    "title": "Backend development topics",
+    "type": "folder",
+    "collapsed": true
+  },
+  "typescript": {
+    "title": "Typescript explanation",
+    "type": "folder",
+    "collapsed": true
+  }
 }
