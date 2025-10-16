@@ -11,9 +11,6 @@ const meta = {
   backend: {
     title: "Backend",
   },
-  "unity-games": {
-    title: "Unity games",
-  },
 };
 
 export default meta;
