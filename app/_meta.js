@@ -2,9 +2,9 @@ const meta = {
   "personal-projects": {
     title: "Personal projects 🏆",
   },
-  // "web-animations": {
-  //   title: "Web animations 🎨",
-  // },
+  "web-animations": {
+    title: "Web animations",
+  },
   frontend: {
     title: "Frontend",
   },
