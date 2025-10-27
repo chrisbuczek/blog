@@ -1,0 +1,327 @@
+# TypeScript Generics - Complete Guide
+
+Generics allow us to pass types as parameters to functions, classes, and interfaces, making our code more flexible and reusable while maintaining type safety.
+
+## What are Generics?
+
+Think of generics as "type variables" - placeholders for types that will be specified later when the function or class is used.
+
+```typescript filename="BasicGeneric.ts" copy
+// Without generics - limited to one type
+function getFirstString(arr: string[]): string {
+  return arr[0];
+}
+
+// With generics - works with any type
+function getFirst<T>(arr: T[]): T {
+  return arr[0];
+}
+
+// Usage
+const firstNumber = getFirst([1, 2, 3]); // Type: number
+const firstString = getFirst(["a", "b", "c"]); // Type: string
+```
+
+## Function Generics
+
+```typescript filename="FunctionGenerics.ts" copy
+// Single generic type
+function identity<T>(arg: T): T {
+  return arg;
+}
+
+// Multiple generic types
+function pair<T, U>(first: T, second: U): [T, U] {
+  return [first, second];
+}
+
+// Generic with constraints
+function getLength<T extends { length: number }>(arg: T): number {
+  return arg.length; // TypeScript knows T has a length property
+}
+
+// Usage examples
+const result1 = identity(42); // Type: number
+const result2 = pair("hello", 123); // Type: [string, number]
+const result3 = getLength("hello"); // Works - string has length
+const result4 = getLength([1, 2, 3]); // Works - array has length
+```
+
+## Interface Generics
+
+```typescript filename="InterfaceGenerics.ts" copy
+// Generic interface
+interface ApiResponse<T> {
+  data: T;
+  status: number;
+  message: string;
+}
+
+// Usage with different data types
+interface User {
+  id: number;
+  name: string;
+}
+
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+}
+
+const userResponse: ApiResponse<User> = {
+  data: { id: 1, name: "John" },
+  status: 200,
+  message: "Success",
+};
+
+const productResponse: ApiResponse<Product[]> = {
+  data: [{ id: 1, title: "Laptop", price: 999 }],
+  status: 200,
+  message: "Success",
+};
+```
+
+## Class Generics
+
+```typescript filename="ClassGenerics.ts" copy
+// Generic class
+class Stack<T> {
+  private items: T[] = [];
+
+  push(item: T): void {
+    this.items.push(item);
+  }
+
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+
+  get length(): number {
+    return this.items.length;
+  }
+}
+
+// Usage
+const numberStack = new Stack<number>();
+numberStack.push(1);
+numberStack.push(2);
+console.log(numberStack.pop()); // 2
+
+const stringStack = new Stack<string>();
+stringStack.push("hello");
+stringStack.push("world");
+console.log(stringStack.peek()); // "world"
+```
+
+## Generic Constraints
+
+```typescript filename="GenericConstraints.ts" copy
+// Constraint to objects with specific properties
+interface Identifiable {
+  id: number;
+}
+
+function updateEntity<T extends Identifiable>(
+  entity: T,
+  updates: Partial<T>
+): T {
+  return { ...entity, ...updates };
+}
+
+// Keyof constraint
+function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+  return obj[key];
+}
+
+// Usage
+interface Person {
+  id: number;
+  name: string;
+  age: number;
+}
+
+const person: Person = { id: 1, name: "John", age: 30 };
+const name = getProperty(person, "name"); // Type: string
+const age = getProperty(person, "age"); // Type: number
+```
+
+## Utility Types with Generics
+
+```typescript filename="UtilityTypes.ts" copy
+// Common utility types that use generics
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+}
+
+// Partial - makes all properties optional
+type UserUpdate = Partial<User>;
+
+// Pick - selects specific properties
+type UserPublic = Pick<User, "id" | "name" | "email">;
+
+// Omit - excludes specific properties
+type UserCreate = Omit<User, "id">;
+
+// Record - creates object type with specific keys and values
+type UserRoles = Record<string, "admin" | "user" | "guest">;
+
+// Example usage
+const updateUser: UserUpdate = { name: "New Name" }; // Only name is required
+const publicUser: UserPublic = {
+  id: 1,
+  name: "John",
+  email: "john@example.com",
+};
+const createUser: UserCreate = {
+  name: "Jane",
+  email: "jane@example.com",
+  password: "secret",
+};
+```
+
+## Real-World Example: API Client
+
+```typescript filename="ApiClient.ts" copy
+// Generic API client
+class ApiClient {
+  private baseUrl: string;
+
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl;
+  }
+
+  async get<T>(endpoint: string): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`);
+    return response.json() as Promise<T>;
+  }
+
+  async post<TRequest, TResponse>(
+    endpoint: string,
+    data: TRequest
+  ): Promise<TResponse> {
+    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return response.json() as Promise<TResponse>;
+  }
+}
+
+// Usage
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface CreateUserRequest {
+  name: string;
+  email: string;
+}
+
+const api = new ApiClient("https://api.example.com");
+
+// TypeScript knows the return types
+const users = await api.get<User[]>("/users");
+const newUser = await api.post<CreateUserRequest, User>("/users", {
+  name: "John",
+  email: "john@example.com",
+});
+```
+
+## Best Practices
+
+### 1. Use Meaningful Generic Names
+
+```typescript filename="BestPractices.ts" copy
+// Bad - unclear what T represents
+function process<T>(data: T): T {
+  return data;
+}
+
+// Good - clear what the generic represents
+function processUser<TUser>(user: TUser): TUser {
+  return user;
+}
+
+// Even better - use conventional names when appropriate
+function mapArray<TInput, TOutput>(
+  array: TInput[],
+  mapper: (item: TInput) => TOutput
+): TOutput[] {
+  return array.map(mapper);
+}
+```
+
+### 2. Provide Default Types
+
+```typescript filename="DefaultTypes.ts" copy
+// Provide sensible defaults
+interface ApiResponse<TData = any> {
+  data: TData;
+  status: number;
+}
+
+// Can be used with or without explicit type
+const response1: ApiResponse = { data: "anything", status: 200 };
+const response2: ApiResponse<User> = {
+  data: { id: 1, name: "John" },
+  status: 200,
+};
+```
+
+### 3. Use Constraints When Needed
+
+```typescript filename="Constraints.ts" copy
+// Too permissive - any type allowed
+function badExample<T>(arg: T): number {
+  return arg.length; // Error: Property 'length' doesn't exist on type 'T'
+}
+
+// Better - constrained to types with length
+function goodExample<T extends { length: number }>(arg: T): number {
+  return arg.length; // Works perfectly
+}
+```
+
+## Common Pitfalls
+
+### 1. Over-using Generics
+
+```typescript
+// Don't use generics when a specific type is better
+function addNumbers<T>(a: T, b: T): T {
+  // Bad
+  return (a as any) + (b as any);
+}
+
+function addNumbers(a: number, b: number): number {
+  // Good
+  return a + b;
+}
+```
+
+### 2. Not Using Constraints
+
+```typescript
+// Without constraint - runtime error possible
+function processItems<T>(items: T[]): void {
+  items.forEach((item) => console.log(item.name)); // Error if T doesn't have name
+}
+
+// With constraint - type safe
+function processItems<T extends { name: string }>(items: T[]): void {
+  items.forEach((item) => console.log(item.name)); // Safe
+}
+```
+
+Generics are essential for building flexible, reusable, and type-safe TypeScript code. They enable you to write functions and classes that work with multiple types while maintaining full type checking at compile time.

@@ -4,7 +4,7 @@ Short explanation of how Json Web Token works using Node.js with jsonwebtoken li
 
 ## The Basics
 
-JWT's purpose is to securely transmit information between parties as json objects. JWT's are structed from three parts:
+JWT's purpose is to securely transmit information between parties as json objects. It allows us to authenticate users (process of verifying a user's identity) and authorize them to perform some actions (process of verifing user's access) JWT's are structed from three parts:
 
 1. Header
 2. Payload
@@ -13,11 +13,12 @@ JWT's purpose is to securely transmit information between parties as json object
 Each part is encoded in Base64 and separated by a period. Header contains algorythm used for token sign encryption (ex. "alg": "HS256") and token type (ex. "typ": "JWT").
 Payload is where we store our claims. Most often it contains user name, user email or id, user roles, token expiration. Payload can be encrypted, but
 most implementations only use signed, not encrypted tokens. This means that the data in the payload can be read by a 3rd party if intercepted. **Sensitive information
-should never travel in a JWT payload** (unless it's encrypted). Signature
+should never travel in a JWT payload** (unless it's encrypted).
 
 ## Generating/signing the token
 
 There are two ways of signing a token: with a symetric key or with an asymetric key.
+Before genereting the token we should create a secret string key that will be stored in environment variables. In the tokenGenerate.ts example I named it JWT_SECRET_KEY.
 
 ```js filename="tokenGenerate.ts" copy
 import jwt from "jsonwebtoken";
@@ -33,7 +34,10 @@ const generateToken = (id: string) => {
 export default generateToken;
 ```
 
-## Sending the token to the client
+When we generate the token we have to decide for how long the token will be valid. In the example above we are making the token valid for 1 hour. This will be our <span className="font-bold">access token</span>. After 1 hour
+the client will have to ask the server for a new token - <span className="font-bold">refresh token</span>. It will allow user to keep being logged in.
+
+## Sending the access token to the client
 
 Before sending the token to the client we have to authenticate him first. Usually we use '/login' route for that.
 After ensuring that the provided email and password by the client match stored data in the database, we generate and send him a valid token.
@@ -139,3 +143,5 @@ router.post("/login", async (req, res) => {
   }
 });
 ```
+
+## Refresh token

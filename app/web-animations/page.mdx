@@ -1,0 +1,24 @@
+# 3D
+
+Generics allow us to pass type to as parameters to functions, classes, and interfaces, making our code more flexible and reusable while maintaining type safety.
+
+## Basic example
+
+In practice how does it look like? Let's look at the simplest example.
+
+```typescript filename="BasicGenerics.ts" copy
+function getFirst(arr: string[]): string {
+  return arr[0];
+}
+const firstString1 = getFirst(["a", "b", "c"]); // works, yay!
+const firstNumber1 = getFirst([1, 2, 3]); // error :(
+
+function getFirstWithGenerics<T>(arr: T[]): T {
+  return arr[0];
+}
+const firstString2 = getFirstWithGenerics<string>(["a", "b", "c"]); // this works
+const firstNumber2 = getFirstWithGenerics<number>([1, 2, 3]); // and this also works
+```
+
+In the example above I've created two functions: getFirst() and getFirstWithGenerics().
+They do the same thing, but in getFirstWithGenerics we pass a type. We do this by using **\<your_type_here\>** when we call the function.

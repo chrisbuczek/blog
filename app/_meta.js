@@ -2,11 +2,14 @@ const meta = {
   "personal-projects": {
     title: "Personal projects 🏆",
   },
+  // "web-animations": {
+  //   title: "Web animations 🎨",
+  // },
   frontend: {
     title: "Frontend",
   },
-  "typescript-and-javascript": {
-    title: "TypeScript and JavaScript",
+  typescript: {
+    title: "TypeScript",
   },
   backend: {
     title: "Backend",
