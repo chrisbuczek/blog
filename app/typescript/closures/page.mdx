@@ -1,0 +1,37 @@
+# Closures
+
+Generics allow us to pass type to as parameters to functions, classes, and interfaces, making our code more flexible and reusable while maintaining type safety.
+
+## Basic example
+
+In practice how does it look like? Let's look at the simplest example.
+
+```typescript filename="Closures.ts" copy
+export const updateGunFromInput = (
+  gun: GunType,
+  keys: Record<string, boolean>,
+): BulletType | null => {
+  let lastShot = 0; //this is shared across all updateGunFromInput calls, in our case not good
+  if (keys["Enter"] && gun.owner && Date.now() - lastShot > gun.fireRate) {
+    lastShot = Date.now();
+    return createBullet(100, gun);
+  }
+  return null;
+};
+
+//lastShot is a closure - variable that persists between calls
+export const createGunInputHandler = () => {
+  let lastShot = 0;
+
+  return (gun: GunType, keys: Record<string, boolean>) => {
+    if (keys["Enter"] && gun.owner && Date.now() - lastShot > gun.fireRate) {
+      lastShot = Date.now();
+      return createBullet(100, gun);
+    }
+    return null;
+  };
+};
+```
+
+In the example above I've created two functions: getFirst() and getFirstWithGenerics().
+They do the same thing, but in getFirstWithGenerics we pass a type. We do this by using **\<your_type_here\>** when we call the function.

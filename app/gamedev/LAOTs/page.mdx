@@ -1,0 +1,14 @@
+# LAOTs State Management
+
+Recently I saw Anton Mikhailov in [Wookash Podcast](https://www.youtube.com/watch?v=ShSGHb65f3M) talking about LAOTs - large arrays of things. It's an interesting state management design which makes code more performant and easier to read than OOP design pattern. It was used to create a game called [Dreams](https://www.playstation.com/pl-pl/games/dreams/) realeased on PlayStation 4 in 2020.
+
+## The basics
+
+The most popular design that every programmer learns in university is Object-Oriented Programming. Let's see a simple example.
+
+```typescript filename="OOP example" copy
+class Object
+```
+
+In the example above I've created two functions: getFirst() and getFirstWithGenerics().
+They do the same thing, but in getFirstWithGenerics we pass a type. We do this by using **\<your_type_here\>** when we call the function.
