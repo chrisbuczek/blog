@@ -5,8 +5,8 @@ const meta = {
   frontend: {
     title: "Frontend",
   },
-  typescript: {
-    title: "TypeScript",
+  "typescript-and-javascript": {
+    title: "TypeScript/JavaScript",
   },
   backend: {
     title: "Backend",

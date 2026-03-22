@@ -1,17 +1,18 @@
 # Closures
 
-Generics allow us to pass type to as parameters to functions, classes, and interfaces, making our code more flexible and reusable while maintaining type safety.
+Recently when I was developing my game in typescript in data driven style I came across a simple problem.
 
-## Basic example
+## Make gun shoot slow
 
-In practice how does it look like? Let's look at the simplest example.
+This is the code I ended up adding to my game.
 
 ```typescript filename="Closures.ts" copy
+//this is shared across all updateGunFromInput calls, in our case not good
 export const updateGunFromInput = (
   gun: GunType,
   keys: Record<string, boolean>,
 ): BulletType | null => {
-  let lastShot = 0; //this is shared across all updateGunFromInput calls, in our case not good
+  let lastShot = 0;
   if (keys["Enter"] && gun.owner && Date.now() - lastShot > gun.fireRate) {
     lastShot = Date.now();
     return createBullet(100, gun);
