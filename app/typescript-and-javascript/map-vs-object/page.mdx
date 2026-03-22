@@ -1,0 +1,22 @@
+# Generics
+
+Generics allow us to pass type to as parameters to functions, classes, and interfaces, making our code more flexible and reusable while maintaining type safety.
+
+## Basic example
+
+In practice how does it look like? Let's look at the simplest example.
+
+```typescript filename="MapVsObject.ts" copy
+const map = new Map();
+map.set({ id: 1 }, "user"); // object as key ✅
+map.set(42, "answer");
+
+const obj = {};
+"toString" in obj; // true — inherited!
+
+const map = new Map();
+map.has("toString"); // false ✅
+```
+
+In the example above I've created two functions: getFirst() and getFirstWithGenerics().
+They do the same thing, but in getFirstWithGenerics we pass a type. We do this by using **\<your_type_here\>** when we call the function.
