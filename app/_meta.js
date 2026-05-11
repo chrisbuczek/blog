@@ -2,17 +2,20 @@ const meta = {
   "personal-projects": {
     title: "Personal projects 🏆",
   },
-  frontend: {
-    title: "Frontend",
+  javascript: {
+    title: "JavaScript",
   },
-  "typescript-and-javascript": {
-    title: "TypeScript/JavaScript",
+  typescript: {
+    title: "TypeScript",
+  },
+  frontend: {
+    title: "Frontend (Next.js, React)",
   },
   backend: {
-    title: "Backend",
+    title: "Backend (Node.js, Nest.js)",
   },
   gamedev: {
-    title: "Gamedev",
+    title: "Gamedev (Unity)",
   },
 };
 

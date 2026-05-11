@@ -1,6 +1,6 @@
 const meta = {
-  "maxx-burgers": {
-    title: "Maxx Burgers 🍔",
+  small: {
+    title: "small",
   },
 };
 
