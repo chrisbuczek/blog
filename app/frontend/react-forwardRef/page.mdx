@@ -1,0 +1,327 @@
+# ForwardRef React
+
+⚠️ THIS ARTICLE WAS CREATED WITH THE HELP OF CLAUDE OPUS 5 ⚠️
+
+Why refs used to break on function components, what `forwardRef` actually does behind the scenes, and how to decide whether you still need to write it today.
+
+---
+
+## 01 · Should you still use forwardRef in React19?
+
+_If you read nothing else, read this box._
+
+> **Verdict for this repo, today**
+>
+> **Keep writing `forwardRef`.** We run React 19, where it is technically no longer required — but our `@types/react` is still on v18, and those types refuse to let you pass `ref` as a normal prop. `forwardRef` is the only spelling that both the runtime and TypeScript accept right now.
+
+That is the practical rule. The rest of this page explains _why_ the API exists at all, which is worth understanding because it makes the React 19 change (and the day we bump the types) obvious instead of mysterious.
+
+---
+
+## 02 · A ref is just a box
+
+_Strip away the mystique — the whole data structure is one property._
+
+When you call `useRef(null)` or `createRef()`, you get back an object that looks exactly like this:
+
+```js
+// the entire shape of a ref
+{
+  current: null;
+}
+```
+
+That is it. A mutable box that survives re-renders. What differs is **who writes into it**:
+
+- **You put `ref` on a DOM element** — React writes the DOM node in on mount, and writes `null` back on unmount.
+- **You put `ref` on a class component** — React writes the class instance in.
+- **You just use `useRef` yourself** — _you_ write it. React never touches it. A timer id, a previous value, an animation frame id. This one is really just a variable that does not reset on every render.
+
+So the answer to "does a ref always point at an instance of something?" is **no** — a ref can hold any value at all, including a plain number. But for the cases React fills in _automatically_, the target is always a real object with a stable identity. DOM nodes qualify, because the browser's DOM is genuinely object-oriented:
+
+```js
+// DOM nodes are real class instances
+buttonRef.current instanceof HTMLButtonElement; // true
+
+// HTMLButtonElement -> HTMLElement -> Element -> Node -> EventTarget
+```
+
+> **The underlying rule**
+>
+> React can auto-populate a ref only when there is a persistent object to point at.
+
+---
+
+## 03 · Why function components were the odd one out
+
+_Not a bug, not an oversight — there was literally nothing to hand back._
+
+A **class component** has an instance. React calls `new Foo(props)` once and keeps that object alive across every re-render. Your methods, `this.state`, `this.setState` — all live on it. Stable identity, so there is an obvious thing to point a ref at. This is why refs on class components always worked without any special API:
+
+```jsx
+// always worked, no forwardRef needed
+class Foo extends React.Component { ... }
+
+<Foo ref={myRef} />   // myRef.current = the Foo instance
+```
+
+A **function component** has no instance. The function is called again from scratch on every render and leaves nothing behind.
+
+And React could not simply guess a DOM node out of what you returned, because the guess has no good answer: which element, if you return several? What if you return `null` this render? What if your top-level child is itself another component?
+
+| You put a ref on… | React gives you        | Because                         |
+| ----------------- | ---------------------- | ------------------------------- |
+| `<button />`      | the DOM node           | React created that exact node   |
+| `<ClassComp />`   | the component instance | `new` produced a lasting object |
+| `<FuncComp />`    | **nothing + warning**  | no instance exists to hand over |
+
+React does keep an internal object per component — the _fiber_ — but it is deliberately never exposed. Handing you a fiber would be handing you React's own plumbing.
+
+---
+
+## 04 · `ref` was a reserved word
+
+_The common misunderstanding: it was not "reserved for class components"._
+
+This is the part people usually get slightly wrong, so it is worth being precise. `ref` was reserved **globally** — on every JSX element of every kind. React pulled it out of your props before your component ever ran, then decided what to do with it based on what the element was.
+
+React was not inspecting your function component, failing to find a node, and giving up. It **never even tried**. The ref was removed from props, and for function components there was simply no code path that sent it anywhere.
+
+```jsx
+// React 18 · what createElement produced
+<IconButton ref={r} icon={<X />} />
+
+// becomes:
+{
+  $$typeof: Symbol(react.element),
+  type: IconButton,
+  key:  null,
+  ref:  r,                    // lifted OUT, sits beside props
+  props: { icon: <X /> },     // ref is NOT in here
+}
+```
+
+Your component only ever receives `props`. The ref is sitting right next to it, one level up, completely unreachable. That is the whole problem in one picture.
+
+`key` works the same way and **still does** in React 19 — it belongs to the reconciler, not to your component, and you will never receive it as a prop.
+
+---
+
+## 05 · What `forwardRef` actually does
+
+_Anticlimactic in a good way: it tapes a label onto an object._
+
+You can check this yourself in a Node REPL. `forwardRef` does not return a function — it returns a plain object with a `Symbol` on it:
+
+```js
+// verified against our installed react 19.2.4
+const Fwd = React.forwardRef((props, ref) => null);
+
+console.log(Fwd);
+// {
+//   '$$typeof': Symbol(react.forward_ref),
+//   render: [Function (anonymous)]
+// }
+
+typeof Fwd; // 'object'   <- not 'function'!
+```
+
+Your function is just stashed under `render`, with a symbol attached. **That is the entire body of `forwardRef`.** All the real work happens in the reconciler, which reads that symbol and picks a different code path.
+
+### The four steps, in order
+
+**1. JSX lifts the ref out of props**
+
+As shown in section 04 — `ref` lands in its own slot on the element, next to `type` and `key`.
+
+**2. The reconciler branches on `type`**
+
+React looks at what `type` is and creates a fiber with a matching tag. The tag decides how your code gets called — and this table is the actual answer:
+
+| type is…                        | fiber tag           | React calls it as                                     |
+| ------------------------------- | ------------------- | ----------------------------------------------------- |
+| `'button'`                      | `HostComponent`     | no call — makes a DOM node, attaches ref to it        |
+| a plain function                | `FunctionComponent` | `Component(props)` — **1 arg, ref dropped**           |
+| a class                         | `ClassComponent`    | `new Component(props)`                                |
+| `{$$typeof: react.forward_ref}` | `ForwardRef`        | `type.render(props, ref)` — **2 args, ref delivered** |
+
+One argument versus two. That is the whole trick. The symbol routes the element down a branch that passes the ref along as a second parameter.
+
+**3. You choose the destination**
+
+React hands you the ref but does _not_ decide where it goes — you do, by putting it on a real element:
+
+```jsx
+const IconButton = forwardRef((props, ref) => (
+  <button ref={ref} {...props} /> // you name the target
+));
+```
+
+Now it is an ordinary ref on an ordinary DOM element. It has moved from the `IconButton` element's ref slot to the `button` element's ref slot. **That single hop is all "forwarding" means.**
+
+**4. Commit fills the box**
+
+During the commit phase, for any fiber that carries a ref, React writes the instance in — and writes `null` back on unmount:
+
+```js
+if (typeof ref === "function") ref(instance);
+else ref.current = instance;
+```
+
+### The relay, in one picture
+
+```
+        reconciler                    you pick
+        passes 2nd arg                the target
+  ┌──────────────┐            ┌──────────────┐            ┌──────────────┐
+  │ <IconButton  │ ─────────► │ render(      │ ─────────► │ <button      │
+  │   ref={r} /> │            │   props, ref)│            │   ref={ref}/>│
+  └──────▲───────┘            └──────────────┘            └──────┬───────┘
+         └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘
+              commit phase: r.current = the DOM node
+```
+
+---
+
+## 06 · Why an object and not a wrapper function
+
+_A small detail that explains a DevTools annoyance you have probably hit._
+
+You might expect `forwardRef` to return a wrapper function. It cannot — a function would be indistinguishable from a normal function component, so the reconciler would call it with one argument again and we would be back where we started. **The tag has to be readable _before_ the call happens.**
+
+This is the same technique React uses for all its special types:
+
+```js
+Symbol(react.forward_ref);
+Symbol(react.memo);
+Symbol(react.lazy);
+Symbol(react.fragment);
+```
+
+A practical side effect: because it is an object, a `forwardRef` component is not callable and has no `.name`. That is why these show up as _ForwardRef_ or _Anonymous_ in React DevTools unless you name the inner function or set `displayName`.
+
+---
+
+## 07 · Two completely different kinds of `null`
+
+_Mixing these up is the most common confusion. They are unrelated._
+
+**Wiring problem · permanent** — React 18, no forwardRef
+
+```jsx
+<IconButton ref={r} />
+
+// r.current === null FOREVER
+
+// The button rendered fine.
+// It is sitting in the DOM.
+// Waiting changes nothing.
+// It was never routed.
+```
+
+**Timing · resolves on mount** — any ref, correctly wired
+
+```js
+// 1. render  -> still null
+// 2. commit  -> React writes it
+// 3. effect  -> populated
+
+useEffect(() => {
+  ref.current; // the node
+}, []);
+```
+
+> **Remember it like this**
+>
+> `forwardRef` decides _whether_ the ref ever gets connected. Mount timing decides _when_ it holds a value.
+
+### When is `.current` legitimately null?
+
+This applies identically to a ref on your own `<div>` and to one forwarded into a child component. Whose component owns the element is irrelevant — what matters is whether it is currently mounted.
+
+- **During the first render** — before commit. This is why you never read refs in the render body.
+- **After unmount** — React writes `null` back during cleanup.
+- **Conditional rendering** — `{isOpen && <div ref={r} />}` is null whenever it is closed.
+- **An early `return null`** in the component.
+
+> **Why the null guard is still worth writing**
+>
+> In a component where the element is rendered unconditionally, `ref.current` is guaranteed to be set by the time an effect runs — so `if (!el) return` is not really guarding a race. It is mostly **TypeScript narrowing**, because `useRef<HTMLDivElement>(null)` is typed `HTMLDivElement | null` and TS knows nothing about React's commit ordering. Keep it anyway: it is free, it is idiomatic, and it stays correct if someone later wraps that element in a condition.
+
+---
+
+## 08 · What changed in React 19
+
+_Step 1 was deleted. Everything else follows from that._
+
+Nothing about the original ambiguity got solved. What changed is that class components are effectively legacy now, so the reservation was mostly protecting a case nobody writes anymore. React 19 **stopped lifting `ref` out of props** for function components. You can see it directly in our installed version:
+
+```js
+// react 19.2.4 · ref stays in props now
+React.createElement(Plain, { ref: "REF", bar: 1 });
+
+// React 18 -> props: { bar: 1 }               ref lifted out
+// React 19 -> props: { ref: 'REF', bar: 1 }   ref stays put
+```
+
+So the modern spelling is just a normal prop, and you answer the same "which element do you mean?" question by destructuring instead of taking a second parameter:
+
+```tsx
+// React 19 style
+const IconButton = ({ ref, icon, ...props }: IconButtonProps) => (
+  <button ref={ref} {...props} />
+);
+```
+
+`forwardRef` still exists and is not hard-deprecated — the `ForwardRef` tag remains in the reconciler so old code keeps working, it just unwraps to the same place. A codemod ships with React 19 to remove it when the time comes.
+
+> **⚠ The catch in mp-frontend**
+>
+> Our `package.json` pins `react` at **19.2.4** but `@types/react` at **18.3.28** — React 18 types against a React 19 runtime. The React 18 types do not allow `ref` as a prop on a function component, so the modern spelling _runs_ correctly but _fails typecheck_.
+>
+> That is why `forwardRef` is doing real work in our components today. Bumping `@types/react` and `@types/react-dom` to v19 is the unlock — but it is not cosmetic. Mismatched majors cause misleading errors well beyond refs (`ReactNode` accepting `bigint`, `useRef` requiring an argument, JSX namespace changes), so it deserves its own PR with a full workspace typecheck.
+
+---
+
+## 09 · So when do I write `forwardRef`?
+
+_The decision table. This is the part to bookmark._
+
+| Situation                                     | Write                 | Why                                                         |
+| --------------------------------------------- | --------------------- | ----------------------------------------------------------- |
+| **This repo, right now**                      | `forwardRef`          | `@types/react` is still v18 — the only form that typechecks |
+| After we bump to `@types/react@19`            | `ref` as a plain prop | Simpler, and the direction React is going                   |
+| A shared library supporting React 18 or older | `forwardRef`          | Consumers on 18 need the routing                            |
+| A class component                             | **neither**           | Refs always worked — you get the instance                   |
+| Component nobody needs a handle to            | **neither**           | Do not add it speculatively                                 |
+
+### The trigger to watch for
+
+Reach for it when **a parent needs to reach the DOM node inside your component**. In practice that means focus management, scroll position, measuring size, or handing the node to a positioning library. If no parent ever needs that, skip it — an unused `forwardRef` is noise.
+
+Our `IconButton` is the textbook case: it wraps a `<button>`, and callers legitimately want to focus it or anchor a tooltip to it.
+
+---
+
+## 10 · The piece that completes the model
+
+_What to do when there is no DOM node to point at._
+
+If a function component has no instance, what happens when a parent legitimately needs to _call something_ on it — `focus()`, `clear()`, `scrollToTop()`? You build a fake instance on demand:
+
+```js
+// useImperativeHandle
+useImperativeHandle(ref, () => ({
+  focus: () => inputRef.current?.focus(),
+  clear: () => setValue(""),
+}));
+```
+
+This constructs an object and puts _that_ in the parent's box — a synthetic instance, made on demand, exposing exactly the methods you choose. It exists precisely because function components do not come with one.
+
+Use it sparingly. Forwarding a plain DOM ref, the way `IconButton` does, covers the large majority of real cases. Reach for `useImperativeHandle` only when you need to expose behaviour that is genuinely not "here is my DOM node".
+
+---
+
+Verified against this workspace · react 19.2.4 · @types/react 18.3.28 · next 15.5.16
+Reference component: `libs/shared/ui/src/lib/MPDesign/Buttons/IconButton/index.tsx`

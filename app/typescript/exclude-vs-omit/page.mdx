@@ -1,0 +1,64 @@
+# Exclude vs Omit
+
+⚠️ THIS ARTICLE WAS CREATED WITH THE HELP OF CLAUDE OPUS 5 ⚠️
+
+`Exclude` removes members from a union type. Its whole definition is a single conditional type:
+
+```typescript filename="Exclude.ts" copy
+type Exclude<T, U> = T extends U ? never : T;
+```
+
+There are two pieces of TypeScript trivia packed in there, and both of them are easy to misread: what `extends` is asking, and what `never` does inside a union.
+
+## `extends` is a question, not inheritance
+
+`T extends U` is asking: **is every value of type `T` also a valid `U`?** It is not declaring that `T` inherits from `U`.
+
+```typescript filename="Extends.ts" copy
+type A = "icon" extends "icon" ? true : false; // true
+type B = "icon" extends "line" | "icon" ? true : false; // true
+type C = "plain" extends "line" | "icon" ? true : false; // false
+```
+
+The naming is genuinely confusing. It is the same keyword as JavaScript class inheritance, doing a completely different job. It helps to read `extends` as **"fits into"** instead.
+
+## `never` is absorbed by unions
+
+`never` is the type with zero possible values, so a union containing it collapses:
+
+```typescript filename="Never.ts" copy
+type Result = "line" | never | "plain"; // 'line' | 'plain'
+```
+
+That is the trick that makes `Exclude` work. Returning `never` from the then-branch is how you say **"drop this one"** — the member disappears from the resulting union.
+
+## Distribution over unions
+
+When `T` is a naked type parameter and you pass it a union, TypeScript **distributes** — it splits the union apart, runs the conditional on each member separately, then unions the results back together.
+
+Take a real variant union and exclude two of its members:
+
+```typescript filename="Distribution.ts" copy
+type VariantType = "line" | "outline" | "plain" | "icon";
+
+type Result = Exclude<VariantType, "line" | "icon">;
+// T = 'line' | 'outline' | 'plain' | 'icon'
+// U = 'line' | 'icon'
+```
+
+TypeScript expands that into four independent checks:
+
+| member      | `T extends U`?                          | result      |
+| ----------- | --------------------------------------- | ----------- |
+| `'line'`    | `'line' extends 'line' \| 'icon'` → yes | `never`     |
+| `'outline'` | no                                      | `'outline'` |
+| `'plain'`   | no                                      | `'plain'`   |
+| `'icon'`    | yes                                     | `never`     |
+
+Union the result column back up and `never` absorbs, exactly as above:
+
+```typescript filename="Distribution.ts" copy
+never | "outline" | "plain" | never; // 'outline' | 'plain'
+```
+
+For each member of T: if it fits into U, throw it away; otherwise keep it.

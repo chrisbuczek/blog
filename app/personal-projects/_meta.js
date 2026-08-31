@@ -1,6 +1,6 @@
 const meta = {
-  small: {
-    title: "small",
+  "weather-api-with-redis": {
+    title: "Weather API with Redis",
   },
 };
 
