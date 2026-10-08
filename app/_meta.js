@@ -3,22 +3,6 @@ const meta = {
     title: "Personal projects 🏆",
     theme: { collapsed: false },
   },
-  javascript: {
-    title: "JavaScript",
-    theme: { collapsed: true },
-  },
-  typescript: {
-    title: "TypeScript",
-    theme: { collapsed: true },
-  },
-  frontend: {
-    title: "Frontend (Next.js, React)",
-    theme: { collapsed: true },
-  },
-  backend: {
-    title: "Backend (Node.js, Nest.js)",
-    theme: { collapsed: true },
-  },
   "dev-ops": {
     title: "DevOps",
     theme: { collapsed: true },
@@ -31,8 +15,16 @@ const meta = {
     title: "System design",
     theme: { collapsed: true },
   },
-  gamedev: {
-    title: "Gamedev (Unity)",
+  backend: {
+    title: "Backend (Node.js, Nest.js)",
+    theme: { collapsed: true },
+  },
+  typescript: {
+    title: "TypeScript",
+    theme: { collapsed: true },
+  },
+  frontend: {
+    title: "Frontend",
     theme: { collapsed: true },
   },
 };
